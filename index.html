@@ -18,11 +18,7 @@ body {
   padding: 20px;
 }
 
-h1 {
-  font-size: 6vw;
-  margin-bottom: 30px;
-  text-shadow: 0 0 15px rgba(0,0,0,0.6);
-}
+h1 { font-size: 6vw; margin-bottom: 30px; text-shadow: 0 0 15px rgba(0,0,0,0.6); }
 
 .panel {
   background: rgba(255,255,255,0.05);
@@ -54,7 +50,7 @@ button {
   width: 80%;
   max-width: 300px;
   padding: 20px;
-  margin: 15px 0;
+  margin: 10px 0;
   font-size: 5vw;
   border: none;
   border-radius: 15px;
@@ -63,12 +59,9 @@ button {
   transition: transform 0.1s, box-shadow 0.2s;
 }
 
-button:active {
-  transform: scale(0.97);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3) inset;
-}
-
+button:active { transform: scale(0.97); box-shadow: 0 4px 8px rgba(0,0,0,0.3) inset; }
 .start { background: #00c853; color:white; box-shadow: 0 6px 15px rgba(0,200,83,0.4);}
+.measure { background: #2979ff; color:white; box-shadow: 0 6px 15px rgba(41,121,255,0.4);}
 .stop { background: #d50000; color:white; box-shadow: 0 6px 15px rgba(213,0,0,0.4); }
 
 @media (min-width:700px){
@@ -93,30 +86,40 @@ button:active {
   <div id="rpm" class="value">--</div>
 </div>
 
-<button class="start" onclick="start()">ACTIVAR MICRÓFONO</button>
+<button class="start" onclick="activateMic()">ACTIVAR MICRÓFONO</button>
+<button class="measure" onclick="startMeasuring()">EMPEZAR A CONTAR BPM</button>
 <button class="stop" onclick="stop()">DESACTIVAR</button>
 
 <script src="https://unpkg.com/realtime-bpm-analyzer/dist/realtime-bpm-analyzer.min.js"></script>
 <script>
 let audioCtx, source, analyzer, bandpass;
-let running=false;
+let runningMic=false;
+let measuring=false;
 
-async function start() {
-  if(running) return;
-
+// Activar micrófono (sin iniciar medición)
+async function activateMic() {
+  if(runningMic) return;
   const stream = await navigator.mediaDevices.getUserMedia({audio:true});
   audioCtx = new AudioContext();
   source = audioCtx.createMediaStreamSource(stream);
 
-  // Filtro banda baja para bombo (mejora detección desde altavoz)
+  // Filtro banda baja
   bandpass = audioCtx.createBiquadFilter();
   bandpass.type = "bandpass";
-  bandpass.frequency.value = 120; // centro de la banda (Hz)
-  bandpass.Q.value = 1.5;         // ancho de banda
+  bandpass.frequency.value = 120;
+  bandpass.Q.value = 1.5;
   source.connect(bandpass);
 
+  // Analizador BPM
   analyzer = await createRealtimeBpmAnalyzer(audioCtx);
   bandpass.connect(analyzer.node);
+
+  runningMic = true;
+}
+
+// Iniciar medición de BPM
+function startMeasuring() {
+  if(!runningMic || measuring) return;
 
   analyzer.on('bpm', data => {
     const bpm = Math.round(data.bpm[0].tempo);
@@ -124,18 +127,20 @@ async function start() {
     document.getElementById('rpm').innerText = bpm <= 110 ? bpm : Math.round(bpm/2);
   });
 
-  running = true;
+  measuring = true;
 }
 
+// Desactivar todo
 function stop() {
-  if(!running) return;
+  if(!runningMic) return;
   source.disconnect();
   bandpass.disconnect();
   analyzer.node.disconnect();
   audioCtx.close();
   document.getElementById('bpm').innerText = '--';
   document.getElementById('rpm').innerText = '--';
-  running=false;
+  runningMic=false;
+  measuring=false;
 }
 </script>
 
