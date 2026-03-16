@@ -90,7 +90,9 @@ button:active { transform: scale(0.97); box-shadow: 0 4px 8px rgba(0,0,0,0.3) in
 <button class="measure" onclick="startMeasuring()">EMPEZAR A CONTAR BPM</button>
 <button class="stop" onclick="stop()">DESACTIVAR</button>
 
-<script src="https://unpkg.com/realtime-bpm-analyzer/dist/realtime-bpm-analyzer.min.js"></script>
+<script type="module">
+  import realtimeBpmAnalyzer from 'https://cdn.jsdelivr.net/npm/realtime-bpm-analyzer@5.0.1/+esm';
+</script>
 <script>
 let audioCtx, source, analyzer, bandpass;
 let runningMic=false;
