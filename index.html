@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detector BPM → RPM Indoor</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+background:#111;
+color:white;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+min-height:100vh;
+text-align:center;
+}
+
+h1{
+font-size:5vw;
+margin-bottom:30px;
+}
+
+.container{
+width:95%;
+max-width:500px;
+}
+
+.display{
+background:#1b1b1b;
+border-radius:12px;
+padding:25px;
+margin-bottom:25px;
+}
+
+.label{
+font-size:5vw;
+opacity:0.7;
+}
+
+.value{
+font-size:15vw;
+font-weight:bold;
+margin-top:10px;
+}
+
+.buttons{
+display:flex;
+flex-direction:column;
+gap:20px;
+}
+
+button{
+border:none;
+border-radius:12px;
+padding:25px;
+font-size:6vw;
+font-weight:bold;
+cursor:pointer;
+}
+
+.start{
+background:#00c853;
+color:white;
+}
+
+.stop{
+background:#d50000;
+color:white;
+}
+
+button:active{
+transform:scale(0.97);
+}
+
+@media (min-width:700px){
+
+h1{
+font-size:32px;
+}
+
+.label{
+font-size:22px;
+}
+
+.value{
+font-size:90px;
+}
+
+button{
+font-size:24px;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>BPM → RPM</h1>
+
+<div class="display">
+<div class="label">BPM detectados</div>
+<div id="bpm" class="value">--</div>
+</div>
+
+<div class="display">
+<div class="label">RPM ciclo indoor</div>
+<div id="rpm" class="value">--</div>
+</div>
+
+<div class="buttons">
+<button class="start" onclick="startListening()">ACTIVAR MICRÓFONO</button>
+<button class="stop" onclick="stopListening()">DESACTIVAR MICRÓFONO</button>
+</div>
+
+</div>
+
+<script>
+
+let audioContext;
+let analyser;
+let dataArray;
+let stream;
+let running = false;
+
+let lastPeakTime = 0;
+let intervals = [];
+
+async function startListening(){
+
+if(running) return;
+
+stream = await navigator.mediaDevices.getUserMedia({audio:true});
+
+audioContext = new AudioContext();
+
+const source = audioContext.createMediaStreamSource(stream);
+
+analyser = audioContext.createAnalyser();
+analyser.fftSize = 2048;
+
+source.connect(analyser);
+
+dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+running = true;
+
+detectBeat();
+
+}
+
+function stopListening(){
+
+running = false;
+
+if(stream){
+stream.getTracks().forEach(track => track.stop());
+}
+
+if(audioContext){
+audioContext.close();
+}
+
+document.getElementById("bpm").innerText="--";
+document.getElementById("rpm").innerText="--";
+
+intervals=[];
+lastPeakTime=0;
+
+}
+
+function detectBeat(){
+
+if(!running) return;
+
+analyser.getByteFrequencyData(dataArray);
+
+let energy = 0;
+
+for(let i=0;i<dataArray.length;i++){
+energy += dataArray[i];
+}
+
+energy = energy / dataArray.length;
+
+if(energy > 160){
+
+let now = performance.now();
+
+if(lastPeakTime !== 0){
+
+let interval = now - lastPeakTime;
+
+intervals.push(interval);
+
+if(intervals.length > 8){
+intervals.shift();
+}
+
+let avgInterval = intervals.reduce((a,b)=>a+b)/intervals.length;
+
+let bpm = Math.round(60000 / avgInterval);
+
+updateDisplay(bpm);
+
+}
+
+lastPeakTime = now;
+
+}
+
+requestAnimationFrame(detectBeat);
+
+}
+
+function updateDisplay(bpm){
+
+document.getElementById("bpm").innerText = bpm;
+
+let rpm;
+
+if(bpm <= 110){
+rpm = bpm;
+}else{
+rpm = Math.round(bpm/2);
+}
+
+document.getElementById("rpm").innerText = rpm;
+
+}
+
+</script>
+
+</body>
+</html>
