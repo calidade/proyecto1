@@ -1,13 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAP BPM → RPM</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1 id="texto">Hola</h1>
-  <button onclick="cambiar()">Cambiar</button>
 
-  <script src="app.js"></script>
+<div class="container">
+  <h1>BPM TEMPO</h1>
+
+  <div class="display">
+    <div class="box">
+      <span>BPM</span>
+      <h2 id="bpm">0</h2>
+    </div>
+    <div class="box">
+      <span>RPM Ciclo Indoor</span>
+      <h2 id="rpm">0</h2>
+    </div>
+  </div>
+
+  <button id="tapBtn">PULSA</button>
+  <button id="resetBtn">RESET</button>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
